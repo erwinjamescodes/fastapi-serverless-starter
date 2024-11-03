@@ -1,0 +1,46 @@
+service: fastapi-serverless
+
+provider:
+  name: aws
+  runtime: python3.11
+  region: ap-southeast-1
+  timeout: 29
+  memorySize: 256
+  architecture: x86_64
+  stage: ${opt:stage, 'dev'}
+
+package:
+  patterns:
+    - "!./**"
+    - "!.venv/**"
+    - "!node_modules/**"
+    - "!package*.json"
+    - "!requirements.txt"
+    - "!serverless.yml"
+    - "main.py"
+
+functions:
+  api:
+    handler: main.handler
+    events:
+      - httpApi:
+          method: "*"
+          path: /{proxy+}
+    layers:
+      - !Ref PythonRequirementsLambdaLayer # Reference the layer explicitly
+
+custom:
+  pythonRequirements:
+    layer:
+      name: python-deps
+      description: Python dependencies
+    noDeploy:
+      - pytest
+      - pytest-cov
+    dockerizePip: true
+    zip: true
+    strip: false
+    # layer: true
+
+plugins:
+  - serverless-python-requirements
